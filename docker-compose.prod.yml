@@ -36,7 +36,7 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile.prod.alt
+      dockerfile: Dockerfile.prod.memory
     container_name: agb-searcher-frontend-prod
     environment:
       - REACT_APP_API_URL=http://localhost:8000

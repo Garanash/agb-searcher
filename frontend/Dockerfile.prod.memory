@@ -1,22 +1,26 @@
 # Build stage
 FROM node:18-alpine as build
 
+# Set environment variables for build optimization
+ENV NODE_ENV=production
+ENV GENERATE_SOURCEMAP=false
+ENV NODE_OPTIONS="--max-old-space-size=4096"
+
 WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
 
-# Clean install dependencies (remove node_modules and package-lock.json if they exist)
-RUN rm -rf node_modules package-lock.json
-
-# Install dependencies fresh
-RUN npm install
+# Clean install dependencies
+RUN rm -rf node_modules package-lock.json && \
+    npm install --production=false && \
+    npm cache clean --force
 
 # Copy source code
 COPY . .
 
-# Build the app with increased memory limit
-RUN NODE_OPTIONS="--max-old-space-size=4096" npm run build
+# Build the app with optimizations
+RUN npm run build
 
 # Production stage
 FROM nginx:alpine
