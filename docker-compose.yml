@@ -31,7 +31,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      REACT_APP_API_URL: http://localhost:8000
+      REACT_APP_API_URL: http://188.225.56.200:8000
       PORT: 3000
       HOST: 0.0.0.0
     depends_on:
