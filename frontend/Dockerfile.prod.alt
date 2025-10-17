@@ -6,7 +6,10 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies (use npm install instead of npm ci for better compatibility)
+# Clean install dependencies (remove node_modules and package-lock.json if they exist)
+RUN rm -rf node_modules package-lock.json
+
+# Install dependencies fresh
 RUN npm install
 
 # Copy source code
