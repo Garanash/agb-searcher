@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { 
   Upload, 
-  Button, 
   Card, 
   Typography, 
   Alert, 
@@ -9,7 +8,7 @@ import {
   Space,
   Divider
 } from 'antd';
-import { UploadOutlined, FileExcelOutlined, FileTextOutlined } from '@ant-design/icons';
+import { UploadOutlined, FileExcelOutlined } from '@ant-design/icons';
 import { companyService } from '../services/api';
 
 const { Title, Text } = Typography;

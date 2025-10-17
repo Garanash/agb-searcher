@@ -18,8 +18,7 @@ import {
   MailOutlined, 
   PhoneOutlined, 
   EnvironmentOutlined,
-  CheckCircleOutlined,
-  CloseCircleOutlined
+  CheckCircleOutlined
 } from '@ant-design/icons';
 import { companyService } from '../services/api';
 
