@@ -464,28 +464,25 @@ async def update_assistant(assistant_id: int, assistant_update: AssistantUpdate,
     """Обновить помощника"""
     from database import Assistant as AssistantModel
     
+    print(f"Updating assistant {assistant_id} with data: {assistant_update}")
+    
     assistant = db.query(AssistantModel).filter(AssistantModel.id == assistant_id).first()
     if not assistant:
         raise HTTPException(status_code=404, detail="Помощник не найден")
     
-    if assistant_update.name is not None:
-        assistant.name = assistant_update.name
-    if assistant_update.description is not None:
-        assistant.description = assistant_update.description
-    if assistant_update.system_prompt is not None:
-        assistant.system_prompt = assistant_update.system_prompt
-    if assistant_update.model is not None:
-        assistant.model = assistant_update.model
-    if assistant_update.temperature is not None:
-        assistant.temperature = assistant_update.temperature
-    if assistant_update.max_tokens is not None:
-        assistant.max_tokens = assistant_update.max_tokens
-    if assistant_update.is_active is not None:
-        assistant.is_active = assistant_update.is_active
+    # Обновляем только переданные поля
+    update_data = assistant_update.dict(exclude_unset=True)
+    print(f"Fields to update: {update_data}")
+    
+    for field, value in update_data.items():
+        if hasattr(assistant, field):
+            setattr(assistant, field, value)
+            print(f"Updated {field} to {value}")
     
     assistant.updated_at = datetime.utcnow()
     db.commit()
     db.refresh(assistant)
+    print(f"Assistant updated successfully: {assistant.name}")
     return assistant
 
 @app.delete("/assistants/{assistant_id}")

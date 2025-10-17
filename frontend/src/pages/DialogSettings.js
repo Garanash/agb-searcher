@@ -38,6 +38,7 @@ const { TabPane } = Tabs;
 const DialogSettings = () => {
   const [form] = Form.useForm();
   const [assistantForm] = Form.useForm();
+  const [editAssistantForm] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [dialogs, setDialogs] = useState([]);
   const [selectedDialog, setSelectedDialog] = useState(null);
@@ -198,7 +199,7 @@ const DialogSettings = () => {
 
   const handleEditAssistant = (assistant) => {
     setEditingAssistant(assistant);
-    assistantForm.setFieldsValue(assistant);
+    editAssistantForm.setFieldsValue(assistant);
     setShowEditAssistantModal(true);
   };
 
@@ -207,17 +208,40 @@ const DialogSettings = () => {
 
     setLoading(true);
     try {
+      console.log('=== ОБНОВЛЕНИЕ ПОМОЩНИКА ===');
+      console.log('ID помощника:', editingAssistant.id);
+      console.log('Данные формы:', values);
+      console.log('Типы данных:', {
+        name: typeof values.name,
+        description: typeof values.description,
+        system_prompt: typeof values.system_prompt,
+        model: typeof values.model,
+        temperature: typeof values.temperature,
+        max_tokens: typeof values.max_tokens
+      });
+      
+      // Проверяем, что все обязательные поля заполнены
+      if (!values.name || !values.system_prompt || !values.model) {
+        message.error('Заполните все обязательные поля');
+        return;
+      }
+      
       await settingsService.updateAssistant(editingAssistant.id, values);
       message.success('Помощник обновлен');
       setShowEditAssistantModal(false);
       setEditingAssistant(null);
-      assistantForm.resetFields();
+      editAssistantForm.resetFields();
       loadAssistants();
       // Уведомляем чат об обновлении помощников
       window.dispatchEvent(new CustomEvent('assistantUpdated'));
     } catch (error) {
       console.error('Ошибка при обновлении помощника:', error);
-      message.error('Ошибка при обновлении помощника');
+      console.error('Детали ошибки:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      message.error(`Ошибка при обновлении помощника: ${error.response?.data?.detail || error.message}`);
     } finally {
       setLoading(false);
     }
@@ -676,13 +700,13 @@ const DialogSettings = () => {
         onCancel={() => {
           setShowEditAssistantModal(false);
           setEditingAssistant(null);
-          assistantForm.resetFields();
+          editAssistantForm.resetFields();
         }}
         footer={null}
         width={600}
       >
         <Form
-          form={assistantForm}
+          form={editAssistantForm}
           layout="vertical"
           onFinish={handleUpdateAssistant}
         >
@@ -801,7 +825,7 @@ const DialogSettings = () => {
               <Button onClick={() => {
                 setShowEditAssistantModal(false);
                 setEditingAssistant(null);
-                assistantForm.resetFields();
+                editAssistantForm.resetFields();
               }}>
                 Отмена
               </Button>

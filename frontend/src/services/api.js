@@ -177,7 +177,9 @@ export const settingsService = {
   },
 
   updateAssistant: async (assistantId, updates) => {
+    console.log('API: Обновляем помощника', assistantId, updates);
     const response = await api.put(`/assistants/${assistantId}`, updates);
+    console.log('API: Ответ сервера', response.data);
     return response.data;
   },
 
