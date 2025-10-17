@@ -173,6 +173,8 @@ const DialogSettings = () => {
       setShowAssistantModal(false);
       assistantForm.resetFields();
       loadAssistants();
+      // Уведомляем чат об обновлении помощников
+      window.dispatchEvent(new CustomEvent('assistantUpdated'));
     } catch (error) {
       console.error('Ошибка при создании помощника:', error);
       message.error('Ошибка при создании помощника');
@@ -186,6 +188,8 @@ const DialogSettings = () => {
       await settingsService.deleteAssistant(assistantId);
       message.success('Помощник удален');
       loadAssistants();
+      // Уведомляем чат об обновлении помощников
+      window.dispatchEvent(new CustomEvent('assistantUpdated'));
     } catch (error) {
       console.error('Ошибка при удалении помощника:', error);
       message.error('Ошибка при удалении помощника');
@@ -209,6 +213,8 @@ const DialogSettings = () => {
       setEditingAssistant(null);
       assistantForm.resetFields();
       loadAssistants();
+      // Уведомляем чат об обновлении помощников
+      window.dispatchEvent(new CustomEvent('assistantUpdated'));
     } catch (error) {
       console.error('Ошибка при обновлении помощника:', error);
       message.error('Ошибка при обновлении помощника');

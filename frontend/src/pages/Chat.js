@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Input, Button, List, Card, Typography, Space, Spin, message, Modal, Drawer, Badge, Select, Tag } from 'antd';
-import { SendOutlined, RobotOutlined, UserOutlined, PlusOutlined, HistoryOutlined, DeleteOutlined } from '@ant-design/icons';
+import { SendOutlined, RobotOutlined, UserOutlined, PlusOutlined, HistoryOutlined, DeleteOutlined, ReloadOutlined, SettingOutlined } from '@ant-design/icons';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { chatService, dialogService, settingsService } from '../services/api';
@@ -37,6 +37,18 @@ const Chat = () => {
     loadAssistants();
   }, []);
 
+  // Слушаем события обновления помощников из DialogSettings
+  useEffect(() => {
+    const handleAssistantUpdate = () => {
+      refreshAssistants();
+    };
+
+    window.addEventListener('assistantUpdated', handleAssistantUpdate);
+    return () => {
+      window.removeEventListener('assistantUpdated', handleAssistantUpdate);
+    };
+  }, []);
+
   const loadDialogs = async () => {
     setDialogsLoading(true);
     try {
@@ -63,6 +75,11 @@ const Chat = () => {
     } finally {
       setAssistantsLoading(false);
     }
+  };
+
+  // Функция для обновления списка помощников (вызывается из DialogSettings)
+  const refreshAssistants = async () => {
+    await loadAssistants();
   };
 
   const loadDialog = async (dialogId) => {
@@ -235,28 +252,70 @@ const Chat = () => {
           <Text strong>Помощник:</Text>
           <Select
             placeholder="Выберите помощника"
-            style={{ minWidth: 200 }}
+            style={{ minWidth: 300 }}
             value={selectedAssistant?.id}
             onChange={handleAssistantSelect}
             loading={assistantsLoading}
             allowClear
+            showSearch
+            optionFilterProp="children"
+            filterOption={(input, option) =>
+              option?.children?.props?.children?.[1]?.props?.children?.toLowerCase().includes(input.toLowerCase()) ||
+              option?.children?.props?.children?.[2]?.props?.children?.toLowerCase().includes(input.toLowerCase())
+            }
           >
             {assistants.map(assistant => (
               <Select.Option key={assistant.id} value={assistant.id}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <RobotOutlined />
-                  <span>{assistant.name}</span>
-                  <Tag color="blue" size="small">{assistant.model}</Tag>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
+                  <RobotOutlined style={{ color: '#1890ff' }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 'bold', fontSize: '14px' }}>{assistant.name}</div>
+                    {assistant.description && (
+                      <div style={{ fontSize: '12px', color: '#666', marginTop: 2 }}>
+                        {assistant.description.length > 50 
+                          ? `${assistant.description.substring(0, 50)}...` 
+                          : assistant.description}
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', gap: 4, marginLeft: 8 }}>
+                    <Tag color="blue" size="small">{assistant.model}</Tag>
+                    {assistant.temperature && (
+                      <Tag color="green" size="small">T: {assistant.temperature}</Tag>
+                    )}
+                  </div>
                 </div>
               </Select.Option>
             ))}
           </Select>
           {selectedAssistant && (
-            <Tag color="green" icon={<RobotOutlined />}>
-              {selectedAssistant.name}
-            </Tag>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Tag color="green" icon={<RobotOutlined />}>
+                {selectedAssistant.name}
+              </Tag>
+              <Tag color="blue" size="small">{selectedAssistant.model}</Tag>
+              {selectedAssistant.temperature && (
+                <Tag color="orange" size="small">T: {selectedAssistant.temperature}</Tag>
+              )}
+              {selectedAssistant.max_tokens && (
+                <Tag color="purple" size="small">Max: {selectedAssistant.max_tokens}</Tag>
+              )}
+            </div>
           )}
           <Text type="secondary">({assistants.length} помощников)</Text>
+          <Button 
+            icon={<ReloadOutlined />} 
+            onClick={refreshAssistants}
+            loading={assistantsLoading}
+            size="small"
+            title="Обновить список помощников"
+          />
+          <Button 
+            icon={<SettingOutlined />} 
+            onClick={() => window.open('/settings', '_blank')}
+            size="small"
+            title="Настройки помощников"
+          />
         </div>
       </div>
 
