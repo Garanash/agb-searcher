@@ -25,7 +25,8 @@ import {
   PlusOutlined, 
   RobotOutlined,
   FileTextOutlined,
-  SaveOutlined
+  SaveOutlined,
+  EditOutlined
 } from '@ant-design/icons';
 import { dialogService, settingsService } from '../services/api';
 
@@ -45,6 +46,8 @@ const DialogSettings = () => {
   const [assistants, setAssistants] = useState([]);
   const [models, setModels] = useState([]);
   const [showAssistantModal, setShowAssistantModal] = useState(false);
+  const [showEditAssistantModal, setShowEditAssistantModal] = useState(false);
+  const [editingAssistant, setEditingAssistant] = useState(null);
   const [showSettingsDrawer, setShowSettingsDrawer] = useState(false);
 
   useEffect(() => {
@@ -189,6 +192,31 @@ const DialogSettings = () => {
     }
   };
 
+  const handleEditAssistant = (assistant) => {
+    setEditingAssistant(assistant);
+    assistantForm.setFieldsValue(assistant);
+    setShowEditAssistantModal(true);
+  };
+
+  const handleUpdateAssistant = async (values) => {
+    if (!editingAssistant) return;
+
+    setLoading(true);
+    try {
+      await settingsService.updateAssistant(editingAssistant.id, values);
+      message.success('Помощник обновлен');
+      setShowEditAssistantModal(false);
+      setEditingAssistant(null);
+      assistantForm.resetFields();
+      loadAssistants();
+    } catch (error) {
+      console.error('Ошибка при обновлении помощника:', error);
+      message.error('Ошибка при обновлении помощника');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleApplyAssistant = async (assistant) => {
     if (!selectedDialog) return;
 
@@ -292,6 +320,13 @@ const DialogSettings = () => {
                       disabled={!selectedDialog}
                     >
                       Применить
+                    </Button>,
+                    <Button 
+                      type="link" 
+                      icon={<EditOutlined />}
+                      onClick={() => handleEditAssistant(assistant)}
+                    >
+                      Редактировать
                     </Button>,
                     <Popconfirm
                       title="Удалить помощника?"
@@ -621,6 +656,147 @@ const DialogSettings = () => {
                 Создать
               </Button>
               <Button onClick={() => setShowAssistantModal(false)}>
+                Отмена
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Модальное окно редактирования помощника */}
+      <Modal
+        title="Редактировать помощника"
+        open={showEditAssistantModal}
+        onCancel={() => {
+          setShowEditAssistantModal(false);
+          setEditingAssistant(null);
+          assistantForm.resetFields();
+        }}
+        footer={null}
+        width={600}
+      >
+        <Form
+          form={assistantForm}
+          layout="vertical"
+          onFinish={handleUpdateAssistant}
+        >
+          <Form.Item
+            name="name"
+            label="Название"
+            rules={[{ required: true, message: 'Введите название помощника' }]}
+          >
+            <Input placeholder="Например: Аналитик данных" />
+          </Form.Item>
+
+          <Form.Item
+            name="description"
+            label="Описание"
+          >
+            <TextArea rows={2} placeholder="Краткое описание помощника..." />
+          </Form.Item>
+
+          <Form.Item
+            name="system_prompt"
+            label="Системный промпт"
+            rules={[{ required: true, message: 'Введите системный промпт' }]}
+          >
+            <TextArea 
+              rows={6} 
+              placeholder="Опишите, как должен себя вести этот помощник..."
+            />
+          </Form.Item>
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="model"
+                label="Модель"
+                rules={[{ required: true, message: 'Выберите модель' }]}
+              >
+                <Select 
+                  placeholder="Выберите модель"
+                  showSearch
+                  optionFilterProp="children"
+                  filterOption={(input, option) =>
+                    option?.children?.props?.children?.[0]?.props?.children?.toLowerCase().includes(input.toLowerCase()) ||
+                    option?.children?.props?.children?.[1]?.props?.children?.toLowerCase().includes(input.toLowerCase())
+                  }
+                >
+                  {Object.entries(
+                    models.reduce((acc, model) => {
+                      const provider = model.provider || 'Other';
+                      if (!acc[provider]) acc[provider] = [];
+                      acc[provider].push(model);
+                      return acc;
+                    }, {})
+                  ).map(([provider, providerModels]) => (
+                    <Select.OptGroup key={provider} label={provider}>
+                      {providerModels.map(model => (
+                        <Option key={model.id} value={model.id}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                              <div style={{ fontWeight: 'bold' }}>{model.name}</div>
+                              <Text type="secondary" style={{ fontSize: 11 }}>
+                                {model.description}
+                              </Text>
+                            </div>
+                            <div style={{ display: 'flex', gap: 4, marginLeft: 8 }}>
+                              {model.supports_vision && (
+                                <Tag color="blue" size="small">Vision</Tag>
+                              )}
+                              <Tag 
+                                color={
+                                  model.category === 'premium' ? 'gold' :
+                                  model.category === 'standard' ? 'green' :
+                                  model.category === 'budget' ? 'blue' :
+                                  model.category === 'specialized' ? 'purple' :
+                                  model.category === 'experimental' ? 'orange' : 'default'
+                                } 
+                                size="small"
+                              >
+                                {model.category}
+                              </Tag>
+                            </div>
+                          </div>
+                        </Option>
+                      ))}
+                    </Select.OptGroup>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="temperature"
+                label="Temperature"
+              >
+                <Select placeholder="Выберите temperature">
+                  <Option value="0.1">0.1 - Очень точные</Option>
+                  <Option value="0.3">0.3 - Точные</Option>
+                  <Option value="0.7">0.7 - Сбалансированные</Option>
+                  <Option value="1.0">1.0 - Креативные</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Form.Item
+            name="max_tokens"
+            label="Максимум токенов"
+          >
+            <Input type="number" placeholder="1000" />
+          </Form.Item>
+
+          <Form.Item>
+            <Space>
+              <Button type="primary" htmlType="submit" loading={loading}>
+                Сохранить изменения
+              </Button>
+              <Button onClick={() => {
+                setShowEditAssistantModal(false);
+                setEditingAssistant(null);
+                assistantForm.resetFields();
+              }}>
                 Отмена
               </Button>
             </Space>
