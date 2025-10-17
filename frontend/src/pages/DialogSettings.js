@@ -369,16 +369,54 @@ const DialogSettings = () => {
                       label="Модель"
                       tooltip="Выберите модель AI для этого диалога"
                     >
-                      <Select placeholder="Выберите модель">
-                        {models.map(model => (
-                          <Option key={model.id} value={model.id}>
-                            <div>
-                              <div>{model.name}</div>
-                              <Text type="secondary" style={{ fontSize: 12 }}>
-                                {model.description}
-                              </Text>
-                            </div>
-                          </Option>
+                      <Select 
+                        placeholder="Выберите модель"
+                        showSearch
+                        optionFilterProp="children"
+                        filterOption={(input, option) =>
+                          option?.children?.props?.children?.[0]?.props?.children?.toLowerCase().includes(input.toLowerCase()) ||
+                          option?.children?.props?.children?.[1]?.props?.children?.toLowerCase().includes(input.toLowerCase())
+                        }
+                      >
+                        {Object.entries(
+                          models.reduce((acc, model) => {
+                            const provider = model.provider || 'Other';
+                            if (!acc[provider]) acc[provider] = [];
+                            acc[provider].push(model);
+                            return acc;
+                          }, {})
+                        ).map(([provider, providerModels]) => (
+                          <Select.OptGroup key={provider} label={provider}>
+                            {providerModels.map(model => (
+                              <Option key={model.id} value={model.id}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <div>
+                                    <div style={{ fontWeight: 'bold' }}>{model.name}</div>
+                                    <Text type="secondary" style={{ fontSize: 11 }}>
+                                      {model.description}
+                                    </Text>
+                                  </div>
+                                  <div style={{ display: 'flex', gap: 4, marginLeft: 8 }}>
+                                    {model.supports_vision && (
+                                      <Tag color="blue" size="small">Vision</Tag>
+                                    )}
+                                    <Tag 
+                                      color={
+                                        model.category === 'premium' ? 'gold' :
+                                        model.category === 'standard' ? 'green' :
+                                        model.category === 'budget' ? 'blue' :
+                                        model.category === 'specialized' ? 'purple' :
+                                        model.category === 'experimental' ? 'orange' : 'default'
+                                      } 
+                                      size="small"
+                                    >
+                                      {model.category}
+                                    </Tag>
+                                  </div>
+                                </div>
+                              </Option>
+                            ))}
+                          </Select.OptGroup>
                         ))}
                       </Select>
                     </Form.Item>
@@ -503,11 +541,54 @@ const DialogSettings = () => {
                 label="Модель"
                 rules={[{ required: true, message: 'Выберите модель' }]}
               >
-                <Select placeholder="Выберите модель">
-                  {models.map(model => (
-                    <Option key={model.id} value={model.id}>
-                      {model.name}
-                    </Option>
+                <Select 
+                  placeholder="Выберите модель"
+                  showSearch
+                  optionFilterProp="children"
+                  filterOption={(input, option) =>
+                    option?.children?.props?.children?.[0]?.props?.children?.toLowerCase().includes(input.toLowerCase()) ||
+                    option?.children?.props?.children?.[1]?.props?.children?.toLowerCase().includes(input.toLowerCase())
+                  }
+                >
+                  {Object.entries(
+                    models.reduce((acc, model) => {
+                      const provider = model.provider || 'Other';
+                      if (!acc[provider]) acc[provider] = [];
+                      acc[provider].push(model);
+                      return acc;
+                    }, {})
+                  ).map(([provider, providerModels]) => (
+                    <Select.OptGroup key={provider} label={provider}>
+                      {providerModels.map(model => (
+                        <Option key={model.id} value={model.id}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                              <div style={{ fontWeight: 'bold' }}>{model.name}</div>
+                              <Text type="secondary" style={{ fontSize: 11 }}>
+                                {model.description}
+                              </Text>
+                            </div>
+                            <div style={{ display: 'flex', gap: 4, marginLeft: 8 }}>
+                              {model.supports_vision && (
+                                <Tag color="blue" size="small">Vision</Tag>
+                              )}
+                              <Tag 
+                                color={
+                                  model.category === 'premium' ? 'gold' :
+                                  model.category === 'standard' ? 'green' :
+                                  model.category === 'budget' ? 'blue' :
+                                  model.category === 'specialized' ? 'purple' :
+                                  model.category === 'experimental' ? 'orange' : 'default'
+                                } 
+                                size="small"
+                              >
+                                {model.category}
+                              </Tag>
+                            </div>
+                          </div>
+                        </Option>
+                      ))}
+                    </Select.OptGroup>
                   ))}
                 </Select>
               </Form.Item>

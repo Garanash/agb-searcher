@@ -587,50 +587,221 @@ async def delete_dialog_file(dialog_id: int, file_id: int, db: Session = Depends
 
 @app.get("/models")
 async def get_available_models():
-    """Получить список доступных моделей"""
-    # Список моделей с Polza.AI (обновляется по мере добавления новых)
+    """Получить список доступных моделей с Polza.AI"""
+    # Актуальный список моделей с Polza.AI (https://polza.ai/models)
     models = [
+        # OpenAI Models
         {
             "id": "gpt-4o",
             "name": "GPT-4o",
-            "description": "Самая мощная модель OpenAI с отличным пониманием контекста",
+            "description": "Самая мощная модель OpenAI с отличным пониманием контекста и мультимодальностью",
             "max_tokens": 4096,
-            "supports_vision": True
+            "supports_vision": True,
+            "provider": "OpenAI",
+            "category": "premium"
         },
         {
             "id": "gpt-4o-mini",
             "name": "GPT-4o Mini",
-            "description": "Быстрая и эффективная модель для большинства задач",
+            "description": "Быстрая и эффективная модель для большинства задач с хорошим соотношением цена/качество",
             "max_tokens": 4096,
-            "supports_vision": True
+            "supports_vision": True,
+            "provider": "OpenAI",
+            "category": "standard"
         },
+        {
+            "id": "gpt-4-turbo",
+            "name": "GPT-4 Turbo",
+            "description": "Улучшенная версия GPT-4 с увеличенным контекстом и скоростью",
+            "max_tokens": 4096,
+            "supports_vision": True,
+            "provider": "OpenAI",
+            "category": "premium"
+        },
+        {
+            "id": "gpt-3.5-turbo",
+            "name": "GPT-3.5 Turbo",
+            "description": "Быстрая и доступная модель для повседневных задач",
+            "max_tokens": 4096,
+            "supports_vision": False,
+            "provider": "OpenAI",
+            "category": "budget"
+        },
+        
+        # Anthropic Claude Models
         {
             "id": "claude-3-5-sonnet-20241022",
             "name": "Claude 3.5 Sonnet",
-            "description": "Продвинутая модель Anthropic с отличными аналитическими способностями",
+            "description": "Продвинутая модель Anthropic с отличными аналитическими способностями и креативностью",
             "max_tokens": 4096,
-            "supports_vision": True
+            "supports_vision": True,
+            "provider": "Anthropic",
+            "category": "premium"
         },
         {
             "id": "claude-3-5-haiku-20241022",
             "name": "Claude 3.5 Haiku",
-            "description": "Быстрая модель Claude для простых задач",
+            "description": "Быстрая модель Claude для простых задач и быстрых ответов",
             "max_tokens": 4096,
-            "supports_vision": True
+            "supports_vision": True,
+            "provider": "Anthropic",
+            "category": "standard"
         },
+        {
+            "id": "claude-3-opus-20240229",
+            "name": "Claude 3 Opus",
+            "description": "Самая мощная модель Claude с превосходными аналитическими способностями",
+            "max_tokens": 4096,
+            "supports_vision": True,
+            "provider": "Anthropic",
+            "category": "premium"
+        },
+        
+        # Google Gemini Models
         {
             "id": "gemini-1.5-pro",
             "name": "Gemini 1.5 Pro",
-            "description": "Мощная модель Google с поддержкой больших контекстов",
+            "description": "Мощная модель Google с поддержкой больших контекстов и мультимодальностью",
             "max_tokens": 8192,
-            "supports_vision": True
+            "supports_vision": True,
+            "provider": "Google",
+            "category": "premium"
         },
         {
             "id": "gemini-1.5-flash",
             "name": "Gemini 1.5 Flash",
-            "description": "Быстрая модель Gemini для повседневных задач",
+            "description": "Быстрая модель Gemini для повседневных задач с хорошей производительностью",
             "max_tokens": 8192,
-            "supports_vision": True
+            "supports_vision": True,
+            "provider": "Google",
+            "category": "standard"
+        },
+        {
+            "id": "gemini-pro",
+            "name": "Gemini Pro",
+            "description": "Базовая модель Gemini для широкого спектра задач",
+            "max_tokens": 4096,
+            "supports_vision": False,
+            "provider": "Google",
+            "category": "budget"
+        },
+        
+        # Perplexity Models
+        {
+            "id": "perplexity-deep-search",
+            "name": "Perplexity Deep Search",
+            "description": "Специализированная модель для глубокого поиска и анализа информации",
+            "max_tokens": 4096,
+            "supports_vision": False,
+            "provider": "Perplexity",
+            "category": "specialized"
+        },
+        {
+            "id": "perplexity-sonar",
+            "name": "Perplexity Sonar",
+            "description": "Быстрая модель Perplexity для поиска и анализа данных",
+            "max_tokens": 4096,
+            "supports_vision": False,
+            "provider": "Perplexity",
+            "category": "standard"
+        },
+        
+        # Meta Llama Models
+        {
+            "id": "llama-3.1-405b",
+            "name": "Llama 3.1 405B",
+            "description": "Мощная open-source модель Meta с отличными возможностями",
+            "max_tokens": 4096,
+            "supports_vision": False,
+            "provider": "Meta",
+            "category": "premium"
+        },
+        {
+            "id": "llama-3.1-70b",
+            "name": "Llama 3.1 70B",
+            "description": "Сбалансированная модель Llama с хорошим соотношением качества и скорости",
+            "max_tokens": 4096,
+            "supports_vision": False,
+            "provider": "Meta",
+            "category": "standard"
+        },
+        {
+            "id": "llama-3.1-8b",
+            "name": "Llama 3.1 8B",
+            "description": "Компактная модель Llama для быстрых задач",
+            "max_tokens": 4096,
+            "supports_vision": False,
+            "provider": "Meta",
+            "category": "budget"
+        },
+        
+        # Mistral Models
+        {
+            "id": "mistral-large",
+            "name": "Mistral Large",
+            "description": "Мощная модель Mistral с отличными аналитическими способностями",
+            "max_tokens": 4096,
+            "supports_vision": False,
+            "provider": "Mistral",
+            "category": "premium"
+        },
+        {
+            "id": "mistral-medium",
+            "name": "Mistral Medium",
+            "description": "Сбалансированная модель Mistral для большинства задач",
+            "max_tokens": 4096,
+            "supports_vision": False,
+            "provider": "Mistral",
+            "category": "standard"
+        },
+        {
+            "id": "mistral-small",
+            "name": "Mistral Small",
+            "description": "Быстрая модель Mistral для простых задач",
+            "max_tokens": 4096,
+            "supports_vision": False,
+            "provider": "Mistral",
+            "category": "budget"
+        },
+        
+        # Cohere Models
+        {
+            "id": "command-r-plus",
+            "name": "Command R+",
+            "description": "Продвинутая модель Cohere для сложных задач и анализа",
+            "max_tokens": 4096,
+            "supports_vision": False,
+            "provider": "Cohere",
+            "category": "premium"
+        },
+        {
+            "id": "command-r",
+            "name": "Command R",
+            "description": "Мощная модель Cohere для широкого спектра задач",
+            "max_tokens": 4096,
+            "supports_vision": False,
+            "provider": "Cohere",
+            "category": "standard"
+        },
+        
+        # Specialized Models
+        {
+            "id": "o1-preview",
+            "name": "O1 Preview",
+            "description": "Экспериментальная модель OpenAI с улучшенными рассуждениями",
+            "max_tokens": 4096,
+            "supports_vision": False,
+            "provider": "OpenAI",
+            "category": "experimental"
+        },
+        {
+            "id": "o1-mini",
+            "name": "O1 Mini",
+            "description": "Компактная версия O1 для быстрых рассуждений",
+            "max_tokens": 4096,
+            "supports_vision": False,
+            "provider": "OpenAI",
+            "category": "experimental"
         }
     ]
     return models
