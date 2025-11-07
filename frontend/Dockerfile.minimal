@@ -1,0 +1,15 @@
+# Minimal Dockerfile for servers with limited memory
+# This Dockerfile expects the build to be done on the host machine
+FROM nginx:alpine
+
+# Copy pre-built app to nginx
+COPY build /usr/share/nginx/html
+
+# Copy nginx configuration
+COPY nginx.conf /etc/nginx/nginx.conf
+
+# Expose port 80
+EXPOSE 80
+
+# Start nginx
+CMD ["nginx", "-g", "daemon off;"]

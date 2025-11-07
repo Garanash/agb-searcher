@@ -1,0 +1,62 @@
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: agb_searcher
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - agb_network
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/agb_searcher
+      POLZA_API_KEY: ak_FojEdiuKBZJwcAdyGQiPUIKt2DDFsTlawov98zr6Npg
+    depends_on:
+      - postgres
+    volumes:
+      - ./backend:/app
+    networks:
+      - agb_network
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    environment:
+      REACT_APP_API_URL: /api
+      PORT: 3000
+      HOST: 0.0.0.0
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - agb_network
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - agb_network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  agb_network:
+    driver: bridge

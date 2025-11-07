@@ -1,0 +1,41 @@
+# Build stage
+FROM node:18-alpine as build
+
+# Set environment variables for build optimization
+ENV NODE_ENV=production
+ENV GENERATE_SOURCEMAP=false
+ENV NODE_OPTIONS="--max-old-space-size=4096"
+
+WORKDIR /app
+
+# Set npm registry to official registry
+RUN npm config set registry https://registry.npmjs.org/
+
+# Copy package files
+COPY package*.json ./
+
+# Clean install dependencies
+RUN rm -rf node_modules package-lock.json && \
+    npm install --production=false && \
+    npm cache clean --force
+
+# Copy source code
+COPY . .
+
+# Build the app with optimizations
+RUN npm run build
+
+# Production stage
+FROM nginx:alpine
+
+# Copy built app to nginx
+COPY --from=build /app/build /usr/share/nginx/html
+
+# Copy nginx configuration
+COPY nginx.conf /etc/nginx/nginx.conf
+
+# Expose port 80
+EXPOSE 80
+
+# Start nginx
+CMD ["nginx", "-g", "daemon off;"]

@@ -1,0 +1,37 @@
+# Build stage
+FROM node:18-alpine as build
+
+WORKDIR /app
+
+# Set npm registry to official registry
+RUN npm config set registry https://registry.npmjs.org/
+
+# Copy package files
+COPY package*.json ./
+
+# Clean install dependencies (remove node_modules and package-lock.json if they exist)
+RUN rm -rf node_modules package-lock.json
+
+# Install dependencies fresh
+RUN npm install
+
+# Copy source code
+COPY . .
+
+# Build the app with increased memory limit
+RUN NODE_OPTIONS="--max-old-space-size=4096" npm run build
+
+# Production stage
+FROM nginx:alpine
+
+# Copy built app to nginx
+COPY --from=build /app/build /usr/share/nginx/html
+
+# Copy nginx configuration
+COPY nginx.conf /etc/nginx/nginx.conf
+
+# Expose port 80
+EXPOSE 80
+
+# Start nginx
+CMD ["nginx", "-g", "daemon off;"]

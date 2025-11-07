@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: agb-searcher-postgres-prod
+    environment:
+      POSTGRES_DB: agb_searcher
+      POSTGRES_USER: agb_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    networks:
+      - agb_network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: agb-searcher-backend-prod
+    environment:
+      - DATABASE_URL=postgresql://agb_user:${POSTGRES_PASSWORD}@postgres:5432/agb_searcher
+      - POLZA_API_KEY=${POLZA_API_KEY}
+      - REACT_APP_API_URL=http://localhost:8000
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    networks:
+      - agb_network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod.memory
+    container_name: agb-searcher-frontend-prod
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - agb_network
+
+volumes:
+  postgres_data:
+
+networks:
+  agb_network:
+    driver: bridge
