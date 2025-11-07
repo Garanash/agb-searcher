@@ -10,7 +10,9 @@ import {
   Button,
   Modal,
   Form,
-  Input
+  Input,
+  message,
+  Popconfirm
 } from 'antd';
 import { 
   EditOutlined, 
@@ -19,9 +21,11 @@ import {
   PhoneOutlined, 
   EnvironmentOutlined,
   CheckCircleOutlined,
-  CloseCircleOutlined
+  CloseCircleOutlined,
+  SendOutlined,
+  CheckOutlined
 } from '@ant-design/icons';
-import { companyService } from '../services/api';
+import { companyService, emailService } from '../services/api';
 
 const { Title, Text } = Typography;
 
@@ -31,6 +35,10 @@ const CompaniesList = () => {
   const [error, setError] = useState(null);
   const [editingCompany, setEditingCompany] = useState(null);
   const [editModalVisible, setEditModalVisible] = useState(false);
+  const [emailCampaignModalVisible, setEmailCampaignModalVisible] = useState(false);
+  const [emailCampaignForm] = Form.useForm();
+  const [selectedCompanyIds, setSelectedCompanyIds] = useState([]);
+  const [verifyingEmails, setVerifyingEmails] = useState(false);
   const [form] = Form.useForm();
 
   useEffect(() => {
@@ -61,8 +69,63 @@ const CompaniesList = () => {
       await companyService.updateCompany(editingCompany.id, values);
       setEditModalVisible(false);
       loadCompanies();
+      message.success('Компания успешно обновлена');
     } catch (err) {
       console.error('Ошибка при сохранении:', err);
+      message.error('Ошибка при сохранении компании');
+    }
+  };
+
+  const handleVerifyEmail = async (email, companyId) => {
+    try {
+      const result = await emailService.verifyEmail(email, companyId);
+      if (result.is_deliverable) {
+        message.success(`Email ${email} валиден и доставляем`);
+      } else {
+        message.warning(`Email ${email} не доставляем: ${result.error_message || 'Неизвестная ошибка'}`);
+      }
+      loadCompanies();
+    } catch (err) {
+      message.error('Ошибка при проверке email');
+    }
+  };
+
+  const handleBulkVerifyEmails = async () => {
+    setVerifyingEmails(true);
+    try {
+      const result = await emailService.bulkVerifyEmails();
+      message.success(result.message);
+      loadCompanies();
+    } catch (err) {
+      message.error('Ошибка при массовой проверке email');
+    } finally {
+      setVerifyingEmails(false);
+    }
+  };
+
+  const handleCreateEmailCampaign = async () => {
+    try {
+      const values = await emailCampaignForm.validateFields();
+      const campaign = await emailService.createCampaign({
+        subject: values.subject,
+        body: values.body,
+        company_ids: selectedCompanyIds.length > 0 ? selectedCompanyIds : null
+      });
+      message.success('Рассылка создана');
+      setEmailCampaignModalVisible(false);
+      emailCampaignForm.resetFields();
+      setSelectedCompanyIds([]);
+    } catch (err) {
+      message.error('Ошибка при создании рассылки');
+    }
+  };
+
+  const handleSendEmailCampaign = async (campaignId) => {
+    try {
+      const result = await emailService.sendCampaign(campaignId);
+      message.success(result.message);
+    } catch (err) {
+      message.error('Ошибка при отправке рассылки');
     }
   };
 
@@ -101,6 +164,12 @@ const CompaniesList = () => {
               <a href={`mailto:${record.email}`}>
                 {record.email}
               </a>
+              <Button
+                size="small"
+                icon={<CheckOutlined />}
+                onClick={() => handleVerifyEmail(record.email, record.id)}
+                title="Проверить email"
+              />
             </Space>
           )}
           {record.phone && (
@@ -123,6 +192,23 @@ const CompaniesList = () => {
       dataIndex: 'equipment_purchased',
       key: 'equipment_purchased',
       render: (text) => text ? <Tag color="blue">{text}</Tag> : '-',
+    },
+    {
+      title: 'Язык рассылки',
+      dataIndex: 'preferred_language',
+      key: 'preferred_language',
+      render: (lang) => {
+        const langMap = {
+          'ru': '🇷🇺 Русский',
+          'en': '🇬🇧 English',
+          'de': '🇩🇪 Deutsch',
+          'fr': '🇫🇷 Français',
+          'es': '🇪🇸 Español',
+          'zh': '🇨🇳 中文',
+          'ja': '🇯🇵 日本語'
+        };
+        return lang ? <Tag color="green">{langMap[lang] || lang}</Tag> : <Tag>🇷🇺 Русский</Tag>;
+      },
     },
     {
       title: 'Описание',
@@ -157,12 +243,39 @@ const CompaniesList = () => {
     );
   }
 
+  const rowSelection = {
+    selectedRowKeys: selectedCompanyIds,
+    onChange: (selectedRowKeys) => {
+      setSelectedCompanyIds(selectedRowKeys);
+    },
+  };
+
   return (
     <div>
-      <Title level={2}>База данных компаний</Title>
-      <Text type="secondary">
-        Список всех компаний, найденных через систему поиска
-      </Text>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <div>
+          <Title level={2}>База данных компаний</Title>
+          <Text type="secondary">
+            Список всех компаний, найденных через систему поиска
+          </Text>
+        </div>
+        <Space>
+          <Button
+            icon={<CheckOutlined />}
+            onClick={handleBulkVerifyEmails}
+            loading={verifyingEmails}
+          >
+            Проверить все email
+          </Button>
+          <Button
+            type="primary"
+            icon={<SendOutlined />}
+            onClick={() => setEmailCampaignModalVisible(true)}
+          >
+            Создать email рассылку
+          </Button>
+        </Space>
+      </div>
 
       {error && (
         <Alert
@@ -179,6 +292,7 @@ const CompaniesList = () => {
           columns={columns}
           dataSource={companies}
           rowKey="id"
+          rowSelection={rowSelection}
           pagination={{
             pageSize: 10,
             showSizeChanger: true,
@@ -214,6 +328,48 @@ const CompaniesList = () => {
           </Form.Item>
           <Form.Item name="equipment_purchased" label="Оборудование">
             <Input placeholder="Список оборудования" />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Модальное окно для создания email рассылки */}
+      <Modal
+        title="Создать email рассылку"
+        open={emailCampaignModalVisible}
+        onOk={handleCreateEmailCampaign}
+        onCancel={() => {
+          setEmailCampaignModalVisible(false);
+          emailCampaignForm.resetFields();
+          setSelectedCompanyIds([]);
+        }}
+        width={700}
+        okText="Создать"
+        cancelText="Отмена"
+      >
+        <Form form={emailCampaignForm} layout="vertical">
+          <Form.Item
+            name="subject"
+            label="Тема письма"
+            rules={[{ required: true, message: 'Введите тему письма' }]}
+          >
+            <Input placeholder="Тема email рассылки" />
+          </Form.Item>
+          <Form.Item
+            name="body"
+            label="Текст письма"
+            rules={[{ required: true, message: 'Введите текст письма' }]}
+          >
+            <Input.TextArea 
+              rows={8}
+              placeholder="Текст email рассылки"
+            />
+          </Form.Item>
+          <Form.Item>
+            <Text type="secondary">
+              {selectedCompanyIds.length > 0 
+                ? `Рассылка будет отправлена ${selectedCompanyIds.length} выбранным компаниям`
+                : 'Рассылка будет отправлена всем компаниям с email адресами'}
+            </Text>
           </Form.Item>
         </Form>
       </Modal>

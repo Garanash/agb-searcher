@@ -1,4 +1,4 @@
-FROM node:18-alpine
+FROM node:18-alpine AS build
 
 WORKDIR /app
 
@@ -6,7 +6,24 @@ COPY package*.json ./
 RUN npm install
 
 COPY . .
+RUN npm run build
+
+FROM nginx:alpine
+
+# Копируем собранное приложение
+COPY --from=build /app/build /usr/share/nginx/html
+
+# Копируем конфигурацию nginx для SPA
+RUN echo 'server { \
+    listen 3000; \
+    server_name _; \
+    root /usr/share/nginx/html; \
+    index index.html; \
+    location / { \
+        try_files $uri $uri/ /index.html; \
+    } \
+}' > /etc/nginx/conf.d/default.conf
 
 EXPOSE 3000
 
-CMD ["npm", "start"]
+CMD ["nginx", "-g", "daemon off;"]

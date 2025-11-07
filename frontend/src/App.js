@@ -5,7 +5,8 @@ import {
   DatabaseOutlined, 
   HistoryOutlined,
   UploadOutlined,
-  SettingOutlined 
+  SettingOutlined,
+  RobotOutlined
 } from '@ant-design/icons';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 
@@ -14,6 +15,7 @@ import EquipmentSearch from './pages/EquipmentSearch';
 import CompaniesList from './pages/CompaniesList';
 import BulkUpload from './pages/BulkUpload';
 import SearchHistory from './pages/SearchHistory';
+import Chat from './pages/Chat';
 
 const { Header, Content, Sider } = Layout;
 const { Title } = Typography;
@@ -47,13 +49,27 @@ const AppLayout = () => {
       icon: <HistoryOutlined />,
       label: <Link to="/history">История поисков</Link>,
     },
+    {
+      key: '/chat',
+      icon: <RobotOutlined />,
+      label: <Link to="/chat">Чат с AI</Link>,
+    },
   ];
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Sider width={250} style={{ background: '#fff' }}>
         <div style={{ padding: '16px', textAlign: 'center', borderBottom: '1px solid #f0f0f0' }}>
-          <Title level={4} style={{ margin: 0, color: '#1890ff' }}>
+          <img 
+            src="/logo.svg" 
+            alt="AGB Searcher Logo" 
+            style={{ height: '40px', marginBottom: '8px' }}
+            onError={(e) => {
+              e.target.style.display = 'none';
+              e.target.nextSibling.style.display = 'block';
+            }}
+          />
+          <Title level={4} style={{ margin: 0, color: '#1890ff', display: 'none' }}>
             AGB Searcher
           </Title>
         </div>
@@ -77,6 +93,7 @@ const AppLayout = () => {
             <Route path="/companies" element={<CompaniesList />} />
             <Route path="/upload" element={<BulkUpload />} />
             <Route path="/history" element={<SearchHistory />} />
+            <Route path="/chat" element={<Chat />} />
           </Routes>
         </Content>
       </Layout>
